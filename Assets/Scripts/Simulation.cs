@@ -4,5 +4,7 @@ using UnityEngine;
 
 public class Simulation : MonoBehaviour
 {
-    
+    // TODO
+    // - Setup the drawing lines for the cube ends
+    // - spawn particles
 }
