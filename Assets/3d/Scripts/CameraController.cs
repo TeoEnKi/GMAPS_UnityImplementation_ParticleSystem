@@ -76,13 +76,13 @@ public class CameraController : MonoBehaviour
         //Move and rotate the camera
 
         if (Input.GetKey(forwardKey))
-            move += Vector3.forward * moveSpeed;
+            move += Vector3.forward * moveSpeed * Time.deltaTime;
         if (Input.GetKey(backKey))
-            move += Vector3.back * moveSpeed;
+            move += Vector3.back * moveSpeed * Time.deltaTime;
         if (Input.GetKey(leftKey))
-            move += Vector3.left * moveSpeed;
+            move += Vector3.left * moveSpeed * Time.deltaTime;
         if (Input.GetKey(rightKey))
-            move += Vector3.right * moveSpeed;
+            move += Vector3.right * moveSpeed * Time.deltaTime;
 
         //By far the simplest solution I could come up with for moving only on the Horizontal plane - no rotation, just cache y
         if (Input.GetKey(flatMoveKey))
