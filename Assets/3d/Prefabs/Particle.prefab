@@ -119,6 +119,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gravity: 10
+  frictionForce: 2
+  constResultForce: 5
+  resultantForce: 0
   collisionDamping: 0.7
   velocity: {x: 0, y: 0, z: 0}
   density: 0
