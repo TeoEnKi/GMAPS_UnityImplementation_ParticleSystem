@@ -361,7 +361,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 93452714494735608, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
       propertyPath: boxSize.x
-      value: 5.28
+      value: 2.05
       objectReference: {fileID: 0}
     - target: {fileID: 93452714494735608, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
       propertyPath: boxSize.y
@@ -393,7 +393,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1824590488591151907, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
       propertyPath: targetDensity
-      value: 2.75
+      value: 1.33
       objectReference: {fileID: 0}
     - target: {fileID: 1824590488591151907, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
       propertyPath: smoothKerRadius

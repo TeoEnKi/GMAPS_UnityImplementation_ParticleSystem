@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -114,15 +115,23 @@ public class SPH : MonoBehaviour
             Vector3 dir = dist == 0 ? particles[samplePointID].RandomDir() : offset / dist;
             //Debug.Log("dir" + dir + "dist" + dist);
             float density = particles[i].density;
-            propertyGradient += -DensityToPressure(density) * (mass / density) * dir * slope;
+            float sharedPressure = CalculateSharedPressure(density, particles[samplePointID].density);
+            propertyGradient += -sharedPressure * (mass / density) * dir * slope;
         }
         return propertyGradient;
+    }
+
+    private float CalculateSharedPressure(float densityA, float densityB)
+    {
+        float pressureA = DensityToPressure(densityA);
+        float pressureB = DensityToPressure(densityB);
+        return (pressureA + pressureB)/2;
     }
 
     float DensityToPressure(float density)
     {
         //how far off the actual density is from the target density
-        float densityError = density - targetDensity;
+        float densityError = density - targetDensity ;
         //how much particle should move due to pressure force
         return densityError * pressureMultiplier;
     }
@@ -166,7 +175,6 @@ public class SPH : MonoBehaviour
             Vector3 pressureForce = CalculatePressureForce(i);
             //moving small parts of the fluid and not the entire fluid moving together at the same acceleration --> density instead of mass
             Vector3 pressureAcceleration = pressureForce / particles[i].density;
-            Debug.Log("particles[i].density" + particles[i].density);
             //newton's second law: law of momentum.
             //The acceleration of the body is directly proportional to the net force acting on the body
             //and inversely proportional to the mass of the body. 
