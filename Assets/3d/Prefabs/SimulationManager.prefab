@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 4360191723772066825}
   - component: {fileID: 93452714494735608}
   - component: {fileID: 1824590488591151907}
-  - component: {fileID: 669523916076314278}
   m_Layer: 0
   m_Name: SimulationManager
   m_TagString: Untagged
@@ -81,18 +80,11 @@ MonoBehaviour:
   mass: 0
   smoothKerRadius: 0
   particles: []
+  particleLayer:
+    serializedVersion: 2
+    m_Bits: 64
   particleProperties: []
   targetDensity: 0
   pressureMultiplier: 0
---- !u!114 &669523916076314278
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5998078179577695938}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ebb84e2d979eebc47ab866b0e5a3e3c1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  positions: []
+  radius: 0
