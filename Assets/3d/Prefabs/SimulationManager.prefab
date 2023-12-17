@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 4360191723772066825}
   - component: {fileID: 93452714494735608}
   - component: {fileID: 1824590488591151907}
+  - component: {fileID: 669523916076314278}
   m_Layer: 0
   m_Name: SimulationManager
   m_TagString: Untagged
@@ -48,7 +49,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   particleGO: {fileID: 3313578101047863474, guid: c6032f471f1bd6e4780447aeeebdd109, type: 3}
   numParticles: 0
-  spacing: 0.2
+  spacing: 0
 --- !u!114 &93452714494735608
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -75,5 +76,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d159d870b2d3cd341b33fe36a87b2a1a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  positions: []
-  velocities: []
+  gravity: 10
+  numParticles: 0
+  mass: 0
+  smoothKerRadius: 0
+  particles: []
+  particleProperties: []
+  targetDensity: 0
+  pressureMultiplier: 0
+--- !u!114 &669523916076314278
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5998078179577695938}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ebb84e2d979eebc47ab866b0e5a3e3c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

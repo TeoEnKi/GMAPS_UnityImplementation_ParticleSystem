@@ -360,20 +360,60 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 93452714494735608, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
-      propertyPath: boxSpawn.y
-      value: 5.74
+      propertyPath: boxSize.x
+      value: 5.28
       objectReference: {fileID: 0}
-    - target: {fileID: 4360191723772066825, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
-      propertyPath: spacing
+    - target: {fileID: 93452714494735608, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
+      propertyPath: boxSize.y
+      value: 2.31
+      objectReference: {fileID: 0}
+    - target: {fileID: 93452714494735608, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
+      propertyPath: boxSize.z
+      value: 3.69
+      objectReference: {fileID: 0}
+    - target: {fileID: 93452714494735608, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
+      propertyPath: boxSpawn.x
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 93452714494735608, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
+      propertyPath: boxSpawn.y
+      value: 6.47
+      objectReference: {fileID: 0}
+    - target: {fileID: 93452714494735608, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
+      propertyPath: boxSpawn.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1824590488591151907, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
+      propertyPath: mass
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1824590488591151907, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1824590488591151907, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
+      propertyPath: targetDensity
+      value: 2.75
+      objectReference: {fileID: 0}
+    - target: {fileID: 1824590488591151907, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
+      propertyPath: smoothKerRadius
+      value: 1.35
+      objectReference: {fileID: 0}
+    - target: {fileID: 1824590488591151907, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
+      propertyPath: pressureMultiplier
+      value: 0.96
       objectReference: {fileID: 0}
     - target: {fileID: 4360191723772066825, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
       propertyPath: numParticles
-      value: 14
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 5998078179577695938, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
       propertyPath: m_Name
       value: SimulationManager
+      objectReference: {fileID: 0}
+    - target: {fileID: 5998078179577695938, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8763735891868246142, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
       propertyPath: m_LocalPosition.x
@@ -415,7 +455,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 669523916076314278, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
