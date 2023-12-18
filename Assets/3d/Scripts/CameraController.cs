@@ -43,14 +43,16 @@ public class CameraController : MonoBehaviour
 
     [SerializeField] private KeyCode anchoredRotateKey = KeyCode.Mouse1;
 
+    MoveBall moveBall;
     private void Start()
     {
+        moveBall = FindAnyObjectByType<MoveBall>();
         SavePosAndRot();
     }
 
     void Update()
     {
-        if (!doFocus)
+        if (!doFocus || moveBall.enableBall)
             return;
 
         //Double click for focus 

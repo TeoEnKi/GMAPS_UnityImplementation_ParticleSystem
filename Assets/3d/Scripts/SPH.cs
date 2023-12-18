@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class SPH : MonoBehaviour
 {
@@ -14,9 +17,6 @@ public class SPH : MonoBehaviour
     public Particle[] particles;
     [SerializeField] LayerMask particleLayer;
 
-    //can be replaced by any array of values (e.g. density and pressure)
-    public float[] particleProperties;
-
     //what the density should be throughout the fluid body
     public float targetDensity;
     //how much should particles be pushed depending on density
@@ -25,8 +25,22 @@ public class SPH : MonoBehaviour
     //for spatial partitioning for performance
     Entry[] spatialLookup;
     int[] startIndices;
+    List<(int, int, int)> cellOffsets;
 
-    public Vector3[] positions;
+    public void EditSPHProperties()
+    {
+        Slider sphPropertyInput = EventSystem.current.currentSelectedGameObject.GetComponent<Slider>();
+
+        switch (sphPropertyInput.gameObject.name.Replace(" Slider", ""))
+        {
+            case ("Density"):
+                targetDensity = sphPropertyInput.value;
+                break;
+            case ("Pressure"):
+                pressureMultiplier = sphPropertyInput.value;
+                break;
+        }
+    }
 
     private void Start()
     {
@@ -35,10 +49,24 @@ public class SPH : MonoBehaviour
 
         startIndices = new int[numParticles];
         spatialLookup = new Entry[numParticles];
+        cellOffsets = new List<(int, int, int)>
+        {
+            (-1, -1, -1), (-1, -1, 0), (-1, -1, 1),
+            (-1, 0, -1), (-1, 0, 0), (-1, 0, 1),
+            (-1, 1, -1), (-1, 1, 0), (-1, 1, 1),
+            (0, -1, -1), (0, -1, 0), (0, -1, 1),
+            (0, 0, -1), (0, 0, 0), (0, 0, 1),
+            (0, 1, -1), (0, 1, 0), (0, 1, 1),
+            (1, -1, -1), (1, -1, 0), (1, -1, 1),
+            (1, 0, -1), (1, 0, 0), (1, 0, 1),
+            (1, 1, -1), (1, 1, 0), (1, 1, 1)
+        };
     }
 
     private void Update()
     {
+        UpdateSpatialLookup();
+
         UpdateDensities();
         SimulationSteps();
     }
@@ -50,8 +78,6 @@ public class SPH : MonoBehaviour
     {
         if (dist >= radius) return 0;
 
-        //based on formula of sphere
-        //float volume = 4/ 3 * Mathf.PI * Mathf.Pow(radius, 3);
         //based on double intergral of line graph of smoothing kernel
         float volume = 2 * Mathf.PI * Mathf.Pow(radius, 5) / 5;
 
@@ -77,20 +103,20 @@ public class SPH : MonoBehaviour
     {
         float density = 0;
 
-        //// for the sampleParticle to consider itself in the density
-        //float dist = 0;
-        //float influence = SmoothingKernel(dist, smoothKerRadius);
-        ////mass scales that influence
-        //density += mass * influence;
+        // for the sampleParticle to consider itself in the density
+        float dist = 0;
+        float influence = SmoothingKernel(dist, smoothKerRadius);
+        //mass scales that influence
+        density += mass * influence;
 
-        //Collider[] neighbourParticles = GetNeighbours(particles[samplePointID].position);
+        List<Particle> neighbourParts = ForeachPointWithinRadius(particles[samplePointID].transform.position);
 
-        for (int i = 0; i < numParticles; i++)
+        for (int i = 0; i < neighbourParts.Count; i++)
         {
-            //if (neighbourParticles[i].gameObject == particles[samplePointID].gameObject)continue;
+            if (neighbourParts[i].gameObject == particles[samplePointID].gameObject) continue;
 
-            float dist = (particles[i].transform.position - particles[samplePointID].position).magnitude;
-            float influence = SmoothingKernel(dist, smoothKerRadius);
+            dist = (neighbourParts[i].transform.position - particles[samplePointID].position).magnitude;
+            influence = SmoothingKernel(dist, smoothKerRadius);
             //mass scales that influence
             density += mass * influence;
         }
@@ -109,48 +135,25 @@ public class SPH : MonoBehaviour
     Vector3 CalculatePressureForce(int samplePointID)
     {
         Vector3 propertyGradient = Vector3.zero;
+        List<Particle> neighbourParts = ForeachPointWithinRadius(particles[samplePointID].transform.position);
 
-        for (int i = 0; i < numParticles; i++)
+        for (int i = 0; i < neighbourParts.Count; i++)
         {
             //so that the particles don't cancel themselves
-            if (samplePointID == i) continue;
+            if (neighbourParts[i] == particles[samplePointID]) continue;
 
-            Vector3 offset = particles[i].transform.position - particles[samplePointID].transform.position;
+            Vector3 offset = neighbourParts[i].transform.position - particles[samplePointID].transform.position;
             float dist = offset.magnitude;
             float slope = SmoothingKernelDerivative(dist, smoothKerRadius);
-            //give random direction so that particle moves somewhere away from the other particle that may have the same position as it
-            Vector3 dir = dist == 0 ? particles[samplePointID].RandomDir() : offset / dist;
-            //Debug.Log("dir" + dir + "dist" + dist);
-            float density = particles[i].density;
+            //give up direction so that particle moves somewhere away from the other particle that may have the same position as it
+            Vector3 dir = dist > 0 ? offset / dist : Vector3.up;
+            float density = neighbourParts[i].density;
             float sharedPressure = CalculateSharedPressure(density, particles[samplePointID].density);
+            //interpolation equation which can be used to find the pressure values at the empty spaces where here are no particles
             propertyGradient += -sharedPressure * (mass / density) * dir * slope;
         }
         return propertyGradient;
     }
-    //get the density gradient at a particle in the fluid to determine the amount of pressure force to act on the particle
-    //Vector3 CalculatePressureForce(int samplePointID)
-    //{
-    //    Vector3 propertyGradient = Vector2.zero;
-
-    //    Collider[] neighbourParticles = GetNeighbours(particles[samplePointID].position);
-
-    //    for (int i = 0; i < neighbourParticles.Length; i++)
-    //    {
-    //        //so that the particles don't cancel themselves
-    //        if (particles[samplePointID].gameObject == neighbourParticles[i].gameObject) continue;
-
-    //        Vector3 offset = neighbourParticles[i].transform.position - particles[samplePointID].transform.position;
-    //        float dist = offset.magnitude;
-    //        float slope = SmoothingKernelDerivative(dist, smoothKerRadius);
-    //        //give random direction so that particle moves somewhere away from the other particle that may have the same position as it
-    //        Vector3 dir = /*dist == 0 ? particles[samplePointID].RandomDir() :*/ offset / dist;
-    //        //Debug.Log("dir" + dir + "dist" + dist);
-    //        float density = neighbourParticles[i].GetComponent<Particle>().density;
-    //        float sharedPressure = CalculateSharedPressure(density, particles[samplePointID].density);
-    //        propertyGradient += -sharedPressure * (mass / density) * dir * slope;
-    //    }
-    //    return propertyGradient;
-    //}
     private float CalculateSharedPressure(float densityA, float densityB)
     {
         float pressureA = DensityToPressure(densityA);
@@ -166,24 +169,6 @@ public class SPH : MonoBehaviour
         return densityError * pressureMultiplier;
     }
 
-    //interpolation equation which can be used to find the pressure values at the empty spaces where here are no particles
-    //no need to use for density as the particleProperty (density) will cancel out the density denominator
-    float CalculateProperty(int samplePoint)
-    {
-        float property = 0;
-
-        for (int i = 0; i < numParticles; i++)
-        {
-            if (samplePoint == i) continue;
-            float dist = (particles[i].transform.position - particles[samplePoint].transform.position).magnitude;
-            float influence = SmoothingKernel(dist, smoothKerRadius);
-            float density = CalculateDensity(i);
-            property += particleProperties[i] * (mass / density) * influence;
-        }
-
-        return property;
-    }
-
     //determines how the particles behave based on the given SPH values
     //separate for loops as some functions need data from neightbouring particles
     public void SimulationSteps()
@@ -193,11 +178,7 @@ public class SPH : MonoBehaviour
         //Apply gravity and calculate the density 
         for (int i = 0; i < numParticles; i++)
         {
-
-            particles[i].velocity += Vector3.down * gravity * Time.deltaTime;
-            Debug.Log("particles[i].velocity" + particles[i].velocity);
-
-            particles[i].density = CalculateDensity(i);
+            particles[i].velocity += new Vector3(0, -0.5f, 0) * gravity * Time.deltaTime;
         }
 
         // Calculate and apply pressure forces
@@ -220,14 +201,6 @@ public class SPH : MonoBehaviour
             particles[i].ResolveCollisions();
         }
     }
-
-    ////optimise by getting list of neighbouring particles of sample point
-    //Collider[] GetNeighbours(Vector3 samplePoint)
-    //{
-    //    Collider[] hitColliders = Physics.OverlapSphere(samplePoint, smoothKerRadius, particleLayer);
-    //    return hitColliders;
-    //}
-
     //run for everytime the particles move
     void UpdateSpatialLookup()
     {
@@ -246,10 +219,11 @@ public class SPH : MonoBehaviour
         }
 
         //Sort by cell key
-        Array.Sort(spatialLookup);
+        Array.Sort(spatialLookup, (x, y) => x.cellKey.CompareTo(y.cellKey));
+
 
         //Calculate start indices of each unique cell key in the spatial lookup
-        for (int i = 0; i < positions.Length; i++)
+        for (int i = 0; i < particles.Length; i++)
         {
             uint key = spatialLookup[i].cellKey;
             uint keyPrev = i == 0 ? uint.MaxValue : spatialLookup[i - 1].cellKey;
@@ -279,8 +253,10 @@ public class SPH : MonoBehaviour
         return hash % (uint)spatialLookup.Length;
     }
     //find particles within the radius of the sample point
-    public void ForeachPointWithinRadius(Vector3 samplePoint)
+    List<Particle> ForeachPointWithinRadius(Vector3 samplePoint)
     {
+        List<Particle> neighbourParts = new List<Particle>();
+
         //find the cell that the sample point is in (this cell is the center of the 3x3x3 block of cells)
         (int centreX, int centreY, int centreZ) = PositionToCellCoord(samplePoint, smoothKerRadius);
         float sqrRadius = Mathf.Pow(smoothKerRadius, 2);
@@ -288,21 +264,27 @@ public class SPH : MonoBehaviour
         //loop over all cells of the of the 3x3x3
         foreach ((int offsetX, int offsetY, int offsetZ) in cellOffsets)
         {
-            uint key = GetKeyFromHash(HashCell(centreX + offsetX, centreY + offsetY, centreZ + offsetZ))
+            // get the key of the cell
+            uint key = GetKeyFromHash(HashCell(centreX + offsetX, centreY + offsetY, centreZ + offsetZ));
+            //get the spatial lookup index of where the list of particles with that cell key starts
             int cellsStartID = startIndices[key];
 
+            //starting from where the list starts, loop through the particles
             for (int i = cellsStartID; i < spatialLookup.Length; i++)
             {
+                //when the spacial lookup key is different from the wanted key, list ends and the for loop breaks
                 if (spatialLookup[i].cellKey != key) break;
 
+                //get the particle ID and check if the particle is within the radius of the sample point
                 int particleID = spatialLookup[i].particleID;
                 float sqrDst = (particles[particleID].transform.position - samplePoint).sqrMagnitude;
 
                 if (sqrDst <= sqrRadius)
                 {
-                    //do something
+                    neighbourParts.Add(particles[cellsStartID]);
                 }
             }
         }
+        return neighbourParts;
     }
 }

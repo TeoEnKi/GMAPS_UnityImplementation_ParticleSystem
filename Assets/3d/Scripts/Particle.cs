@@ -24,7 +24,6 @@ public class Particle : MonoBehaviour
     //to constanly update the velocity, and update the array of positions in the simulation class
     public void ResolveCollisions()
     {
-        Debug.Log("velocity" + velocity + "position" + position);
         Vector3 halfBoundsSize = boundary.boxSize / 2 - transform.localScale / 2;
 
         if (Mathf.Abs(transform.position.x - boundary.boxSpawn.x) >= halfBoundsSize.x)
@@ -53,9 +52,5 @@ public class Particle : MonoBehaviour
             velocity.z *= -1 * collisionDamping;
         }
         position = transform.position;
-    }
-    public Vector3 RandomDir()
-    {
-        return Random.insideUnitSphere.normalized;
     }
 }

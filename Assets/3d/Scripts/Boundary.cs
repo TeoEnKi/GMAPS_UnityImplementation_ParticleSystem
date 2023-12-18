@@ -1,6 +1,6 @@
-using System.Collections;
-using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class Boundary : MonoBehaviour
 {
@@ -13,6 +13,27 @@ public class Boundary : MonoBehaviour
         boxSpawn = transform.position;
         Gizmos.color = Color.red;
         Gizmos.DrawWireCube(boxSpawn, boxSize);
+    }
+    public void ChangeBoundarySize()
+    {
+        TMP_InputField inputField = EventSystem.current.currentSelectedGameObject.GetComponent<TMP_InputField>();
+        if (inputField == null || !float.TryParse(inputField.text,out float sizeDimValue)) return;
+
+        switch (inputField.gameObject.name)
+        {
+            case ("VecX"):
+                boxSize.x = Mathf.Abs(float.Parse(inputField.text));
+                break;
+
+            case ("VecY"):
+                boxSize.y = Mathf.Abs(float.Parse(inputField.text));
+                break;
+
+            case ("VecZ"):
+                boxSize.z = Mathf.Abs(float.Parse(inputField.text));
+                break;
+        }
+
     }
 
 }
