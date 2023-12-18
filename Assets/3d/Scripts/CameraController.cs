@@ -73,6 +73,7 @@ public class CameraController : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (moveBall.enableBall)return;
         Vector3 move = Vector3.zero;
 
         //Move and rotate the camera
