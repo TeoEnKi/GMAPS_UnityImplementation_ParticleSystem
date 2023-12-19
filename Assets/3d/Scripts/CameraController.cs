@@ -1,4 +1,3 @@
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 public class CameraController : MonoBehaviour
@@ -52,7 +51,15 @@ public class CameraController : MonoBehaviour
 
     void Update()
     {
-        if (!doFocus || moveBall.enableBall)
+        //go back to box spawn pos 
+        if (Input.GetKeyDown("f"))
+        {
+            Debug.Log("focus");
+            Boundary boundary = FindAnyObjectByType<Boundary>();
+            transform.position = boundary.transform.position;
+        }
+
+        if (!doFocus)
             return;
 
         //Double click for focus 
@@ -73,7 +80,7 @@ public class CameraController : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (moveBall.enableBall)return;
+        if (moveBall.enableBall) return;
         Vector3 move = Vector3.zero;
 
         //Move and rotate the camera

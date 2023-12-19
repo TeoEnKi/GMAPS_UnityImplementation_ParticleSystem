@@ -11,16 +11,18 @@ public class SPH : MonoBehaviour
     ParticleSpawner particleSpawner;
     [SerializeField] int numParticles;
 
-    public float mass;
+    const float mass = 10;
     public float smoothKerRadius;
 
     public Particle[] particles;
     [SerializeField] LayerMask particleLayer;
 
     //what the density should be throughout the fluid body
-    public float targetDensity;
+    [SerializeField] float targetDensity;
     //how much should particles be pushed depending on density
-    public float pressureMultiplier;
+    [SerializeField] float pressureMultiplier;
+    [SerializeField] float viscosityStrength = 10;
+
 
     //for spatial partitioning for performance
     Entry[] spatialLookup;
@@ -62,40 +64,66 @@ public class SPH : MonoBehaviour
             (1, 1, -1), (1, 1, 0), (1, 1, 1)
         };
     }
-
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(particles[87].transform.position, smoothKerRadius);
+    }
     private void Update()
     {
-        UpdateSpatialLookup();
-
-        UpdateDensities();
+        ////update spatial lookup with predicted positions
+        //UpdateSpatialLookup();
+        ////Calulate densities based on predicted positions
+        //for (int i = 0; i < numParticles; i++)
+        //{
+        //    particles[i].density = CalculateDensity(i);
+        //}
         SimulationSteps();
     }
 
     //measure of influence of a particle on the updated particle 
     //measured by the radius of the smoothing kernel - the distance between the 2 particles
     //a very important concept used in most SPH formulas
-    float SmoothingKernel(float dist, float radius)
+    float SmoothKernelPow2(float dist, float radius)
     {
         if (dist >= radius) return 0;
 
-        //based on double intergral of line graph of smoothing kernel
-        float volume = 2 * Mathf.PI * Mathf.Pow(radius, 5) / 5;
-
-        //based on a exponential graph
-        //faster increase/decrease in y value
-        return Mathf.Pow(radius - dist, 2) / volume;
+        float volume = (2 * Mathf.PI * Mathf.Pow(radius, 5)) / 15;
+        float v = radius - dist;
+        return v * v / volume;
     }
 
     //Getting the rate of change at the point of the influence graph
-    float SmoothingKernelDerivative(float dist, float radius)
+    float DeriveSmoothKernelPow2(float dist, float radius)
     {
         //constant
         if (dist >= radius) return 0;
 
         //partially derive the formula used for the smoothing kernel
-        float f = radius - dist;
-        float scale = -5 / (Mathf.PI * Mathf.Pow(radius, 5));
-        return scale * f;
+        float scale = 15 / (Mathf.Pow(radius, 5) * Mathf.PI);
+        float v = radius - dist;
+        return -v * scale;
+    }
+    //based on cubic exponential graph
+    //sharper increase/decrease than pow 2
+    //to get the nearest density to get nearest pressure to apply a small force to the particle to move it away from the clusters that it is in
+    float SmoothKernelPow3(float dist, float radius)
+    {
+        if (dist >= radius) return 0;
+
+        float volume = (Mathf.PI * Mathf.Pow(radius, 6)) / 15;
+        float v = radius - dist;
+        return v * v * v / volume;
+    }
+
+    //Getting the rate of change at the point of the influence graph
+    float DeriveSmoothKernelPow3(float dist, float radius)
+    {
+        if (dist >= radius) return 0;
+
+        float scale = 45 / (Mathf.Pow(radius, 6) * Mathf.PI);
+        float v = radius - dist;
+        return -v * v * scale;
     }
 
     //getting the density of the fluid at that particle/ point of the fluid body
@@ -103,10 +131,9 @@ public class SPH : MonoBehaviour
     {
         float density = 0;
 
-        // for the sampleParticle to consider itself in the density
+        //for the sampleParticle to consider itself in the density
         float dist = 0;
-        float influence = SmoothingKernel(dist, smoothKerRadius);
-        //mass scales that influence
+        float influence = SmoothKernelPow2(dist, smoothKerRadius);
         density += mass * influence;
 
         List<Particle> neighbourParts = ForeachPointWithinRadius(particles[samplePointID].transform.position);
@@ -115,20 +142,13 @@ public class SPH : MonoBehaviour
         {
             if (neighbourParts[i].gameObject == particles[samplePointID].gameObject) continue;
 
-            dist = (neighbourParts[i].transform.position - particles[samplePointID].position).magnitude;
-            influence = SmoothingKernel(dist, smoothKerRadius);
+            dist = (neighbourParts[i].transform.position - particles[samplePointID].predictedPosition).magnitude;
+            influence = SmoothKernelPow2(dist, smoothKerRadius);
+
             //mass scales that influence
             density += mass * influence;
         }
         return density;
-    }
-
-    void UpdateDensities()
-    {
-        for (int i = 0; i < numParticles; i++)
-        {
-            particles[i].density = CalculateDensity(i);
-        }
     }
 
     //get the density gradient at a particle in the fluid to determine the amount of pressure force to act on the particle
@@ -144,44 +164,89 @@ public class SPH : MonoBehaviour
 
             Vector3 offset = neighbourParts[i].transform.position - particles[samplePointID].transform.position;
             float dist = offset.magnitude;
-            float slope = SmoothingKernelDerivative(dist, smoothKerRadius);
+            float slope = DeriveSmoothKernelPow2(dist, smoothKerRadius);
             //give up direction so that particle moves somewhere away from the other particle that may have the same position as it
-            Vector3 dir = dist > 0 ? offset / dist : Vector3.up;
+            Vector3 dir = dist > 0 ? -offset / dist : Vector3.up;
             float density = neighbourParts[i].density;
-            float sharedPressure = CalculateSharedPressure(density, particles[samplePointID].density);
+            float nearestDensity = neighbourParts[i].nearestDensity;
+            (float sharedPressure, float nearestSharedPressure) = CalculateSharedPressure(density, particles[samplePointID].density, nearestDensity, particles[samplePointID].nearestDensity);
             //interpolation equation which can be used to find the pressure values at the empty spaces where here are no particles
-            propertyGradient += -sharedPressure * (mass / density) * dir * slope;
+            propertyGradient += sharedPressure * (mass / density) * dir * slope;
         }
         return propertyGradient;
     }
-    private float CalculateSharedPressure(float densityA, float densityB)
+    private (float, float) CalculateSharedPressure(float densityA, float densityB, float nearestDensityA, float nearestDensityB)
     {
-        float pressureA = DensityToPressure(densityA);
-        float pressureB = DensityToPressure(densityB);
-        return (pressureA + pressureB) / 2;
+        (float pressureA, float nearestPressureA) = DensityToPressure(densityA, nearestDensityA);
+        (float pressureB, float nearestPressureB) = DensityToPressure(densityB, nearestDensityB);
+
+        float sharedPressure = (pressureA + pressureB) / 2;
+        float nearestSharedPressure = (nearestPressureA + nearestPressureB) / 2;
+        return (sharedPressure, nearestSharedPressure);
     }
 
-    float DensityToPressure(float density)
+    (float, float) DensityToPressure(float density, float nearestDensity)
     {
         //how far off the actual density is from the target density
         float densityError = density - targetDensity;
         //how much particle should move due to pressure force
-        return densityError * pressureMultiplier;
+        float pressure = densityError * pressureMultiplier;
+        float nearestPressure = nearestDensity * pressureMultiplier;
+
+        return (pressure, nearestPressure);
+    }
+    //using the graph with the slow increase when x is near 0
+    //function with a polynomial equation
+    //!!code should be put in SmoothKernelPoly
+    float ViscositySmoothingKernel(float dist, float radius)
+    {
+        if (dist >= radius) return 0;
+
+        float vol = (float)((64 * Mathf.PI * Mathf.Pow(Mathf.Abs(radius), 9)) / 315);
+        float v = radius * radius - dist * dist;
+        return v * v * v / vol;
+    }
+
+    Vector3 CalculateViscosityForce(int samplePointID)
+    {
+        Vector3 viscosityForce = Vector3.zero;
+        Vector3 position = particles[samplePointID].transform.position;
+
+        List<Particle> neighbourParts = ForeachPointWithinRadius(particles[samplePointID].transform.position);
+        for (int otherIndex = 0; otherIndex < neighbourParts.Count; otherIndex++)
+        {
+            float dist = (position - particles[otherIndex].transform.position).magnitude;
+            float influence = ViscositySmoothingKernel(dist, smoothKerRadius);
+            viscosityForce += (particles[otherIndex].velocity - particles[samplePointID].velocity) * influence;
+        }
+
+        return viscosityForce * viscosityStrength;
     }
 
     //determines how the particles behave based on the given SPH values
     //separate for loops as some functions need data from neightbouring particles
     public void SimulationSteps()
     {
+        const float deltaTime = 1 / 120f;
         if (numParticles == 0) return;
 
-        //Apply gravity and calculate the density 
+        //Apply gravity and predict next positions (to better react to upcoming situations) (so instead of step one move here, step 2 move there, take that position and calculate everything before deciding where the particles should move)
         for (int i = 0; i < numParticles; i++)
         {
-            particles[i].velocity += new Vector3(0, -0.5f, 0) * gravity * Time.deltaTime;
+            particles[i].velocity += new Vector3(0, -0.5f, 0) * gravity * deltaTime;
+            particles[i].predictedPosition = particles[i].transform.position + particles[i].velocity;
         }
 
-        // Calculate and apply pressure forces
+        //update spatial lookup with predicted positions
+        UpdateSpatialLookup();
+
+        //Calulate densities based on predicted positions
+        for (int i = 0; i < numParticles; i++)
+        {
+            particles[i].density = CalculateDensity(i);
+        }
+
+        // Calculate and apply pressure forces and viscosity
         for (int i = 0; i < numParticles; i++)
         {
             Vector3 pressureForce = CalculatePressureForce(i);
@@ -190,18 +255,20 @@ public class SPH : MonoBehaviour
             //newton's second law: law of momentum.
             //The acceleration of the body is directly proportional to the net force acting on the body
             //and inversely proportional to the mass of the body. 
-            particles[i].velocity += pressureAcceleration * Time.deltaTime;
+            particles[i].velocity += pressureAcceleration * deltaTime;
+
+            Vector3 viscosityForce = CalculateViscosityForce(i);
+            particles[i].velocity += viscosityForce * deltaTime;
 
         }
 
         //Apply and add velocities to positions values
         for (int i = 0; i < numParticles; i++)
         {
-            particles[i].transform.position += particles[i].velocity * Time.deltaTime;
+            particles[i].transform.position += particles[i].velocity * deltaTime;
             particles[i].ResolveCollisions();
         }
     }
-    //run for everytime the particles move
     void UpdateSpatialLookup()
     {
         // Create (unordered) spatial lookup
@@ -209,13 +276,14 @@ public class SPH : MonoBehaviour
         for (int i = 0; i < numParticles; i++)
         {
             //convert position of particle to the position of the cell that the particle is in
-            (int cellX, int cellY, int cellZ) = PositionToCellCoord(particles[i].transform.position, smoothKerRadius);
+            (int cellX, int cellY, int cellZ) = PositionToCellCoord(particles[i].predictedPosition, smoothKerRadius);
             //a cellkey that will only be positive or 0, thus the uint
             uint cellKey = GetKeyFromHash(HashCell(cellX, cellY, cellZ));
             //array of array/list of list?
             spatialLookup[i] = new Entry(i, cellKey);
             //reset start index values
             startIndices[i] = int.MaxValue;
+
         }
 
         //Sort by cell key
@@ -281,7 +349,7 @@ public class SPH : MonoBehaviour
 
                 if (sqrDst <= sqrRadius)
                 {
-                    neighbourParts.Add(particles[cellsStartID]);
+                    neighbourParts.Add(particles[particleID]);
                 }
             }
         }

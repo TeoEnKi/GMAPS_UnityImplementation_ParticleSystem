@@ -30,7 +30,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0.7665651, y: 4.6, z: 0.43726015}
-  m_LocalScale: {x: 0.58819276, y: 0.58819276, z: 0.58819276}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -120,5 +120,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   collisionDamping: 0.7
   velocity: {x: 0, y: 0, z: 0}
-  position: {x: 0, y: 0, z: 0}
   density: 0
+  predictedPosition: {x: 0, y: 0, z: 0}

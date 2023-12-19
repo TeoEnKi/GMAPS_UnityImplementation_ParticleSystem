@@ -10,13 +10,10 @@ public class Particle : MonoBehaviour
     Boundary boundary;
 
     public Vector3 velocity;
-    public Vector3 position;
     public float density;
+    public float nearestDensity;
 
-    private void Awake()
-    {
-        position = transform.position;
-    }
+    public Vector3 predictedPosition;
     private void Start()
     {
         boundary = FindAnyObjectByType<Boundary>();
@@ -51,6 +48,5 @@ public class Particle : MonoBehaviour
 
             velocity.z *= -1 * collisionDamping;
         }
-        position = transform.position;
     }
 }
