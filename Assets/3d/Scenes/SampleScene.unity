@@ -3712,11 +3712,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4360191723772066825, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
       propertyPath: spacing
-      value: 1.56
+      value: 1.23
       objectReference: {fileID: 0}
     - target: {fileID: 4360191723772066825, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
       propertyPath: numParticles
-      value: 400
+      value: 300
       objectReference: {fileID: 0}
     - target: {fileID: 5998078179577695938, guid: 0f1152f3f4f5a264b9286a70b2894725, type: 3}
       propertyPath: m_Name
